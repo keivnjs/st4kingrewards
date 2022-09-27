@@ -18,6 +18,7 @@ contract StakingRewardFactory is Ownable {
      */
 
     function launchPool(
+        string memory name,
         address stakingToken,
         address rewardToken,
         uint256 lockPeriod
@@ -26,7 +27,7 @@ contract StakingRewardFactory is Ownable {
 
         pool = new StakingReward(
             owner(),
-            "Lock",
+            name,
             stakingToken,
             rewardToken,
             lockPeriod
