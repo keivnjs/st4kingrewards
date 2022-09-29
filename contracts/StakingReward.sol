@@ -15,19 +15,20 @@ contract StakingReward is ReentrancyGuard, Ownable {
     uint256 public updatedAt; // Minimum of last updated time and reward finish time
     uint256 public rewardRate; // Reward to be paid out per second
     uint256 public rewardPerTokenStored; // Sum of (reward rate * duration * 1e18 / total supply)
+    uint256 public totalSupply; // Total Staked
     uint256 public lockPeriod;
 
-    struct User {
-        uint256 lastStake; // timestamp last time user stake
-    }
-
-    mapping(address => User) public userInfo; // timestamp when user stake
-
+    mapping(address => uint256) public lastStake; // timestamp when user stake
     mapping(address => uint256) public userRewardPerTokenPaid; // User address => rewardPerTokenStored
     mapping(address => uint256) public rewards; // User address => rewards to be claimed
-
-    uint256 public totalSupply; // Total Staked
     mapping(address => uint256) public balanceOf; // User address => staked amount
+
+    /* ========== EVENTS ========== */
+
+    event Staked(address indexed user, uint256 _amount);
+    event Unstaked(address indexed user, uint256 _amount, uint256 timestamp);
+    event RewardPaid(address indexed user, uint256 reward);
+    event RewardsDurationUpdated(uint256 newDuration);
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -47,10 +48,6 @@ contract StakingReward is ReentrancyGuard, Ownable {
 
     /* ========== MODIFIERS ========== */
 
-    /**
-     *  Buat track rewardPerToken & userRewardPerTokenPaid
-     */
-
     modifier updateReward(address _account) {
         rewardPerTokenStored = rewardPerToken();
         updatedAt = lastTimeRewardApplicable();
@@ -63,18 +60,11 @@ contract StakingReward is ReentrancyGuard, Ownable {
 
     /* ========== RESTRICTED FUNCTIONS ========== */
 
-    /**
-     * Set duration claimable berapa lama
-     */
     function setRewardsDuration(uint256 _duration) external onlyOwner {
         require(finishAt < block.timestamp, "Reward duration not finished yet");
         duration = _duration;
         emit RewardsDurationUpdated(duration);
     }
-
-    /**
-     * Set reward amount
-     */
 
     function notifyRewardAmount(uint256 _amount) external onlyOwner {
         if (block.timestamp > finishAt) {
@@ -103,30 +93,12 @@ contract StakingReward is ReentrancyGuard, Ownable {
         updateReward(msg.sender)
     {
         require(_amount > 0, "amount = 0");
-        // require(lockPeriod[msg.sender] <= 0);
-        userInfo[msg.sender].lastStake = block.timestamp;
-        // userInfo[msg.sender].lockTimePeriod = _time;
+        lastStake[msg.sender] = block.timestamp;
         balanceOf[msg.sender] += _amount;
         totalSupply += _amount;
         stakingToken.transferFrom(msg.sender, address(this), _amount);
         emit Staked(msg.sender, _amount);
     }
-
-    // function withdraw(uint256 _amount)
-    //     public
-    //     nonReentrant
-    //     updateReward(msg.sender)
-    // {
-    //     require(_amount > 0, "amount = 0");
-    //     balanceOf[msg.sender] -= _amount;
-    //     totalSupply -= _amount;
-    //     stakingToken.transfer(msg.sender, _amount);
-    //     emit Withdrawn(msg.sender, _amount);
-    // }
-
-    /**
-     * Claim Reward
-     */
 
     function getReward() public nonReentrant updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
@@ -146,18 +118,13 @@ contract StakingReward is ReentrancyGuard, Ownable {
         balanceOf[msg.sender] -= _amount;
         totalSupply -= _amount;
         require(
-            block.timestamp - userInfo[msg.sender].lastStake >= lockPeriod,
+            block.timestamp - lastStake[msg.sender] >= lockPeriod,
             "Unable to unstake in locking period"
         );
         stakingToken.transfer(msg.sender, _amount);
         getReward();
         emit Unstaked(msg.sender, _amount, block.timestamp);
     }
-
-    // function exit() external {
-    //     withdraw(balanceOf[msg.sender]);
-    //     getReward();
-    // }
 
     /* ========== VIEWS ========== */
 
@@ -186,12 +153,4 @@ contract StakingReward is ReentrancyGuard, Ownable {
     function _min(uint256 x, uint256 y) private pure returns (uint256) {
         return x <= y ? x : y;
     }
-
-    /* ========== EVENTS ========== */
-
-    event Staked(address indexed user, uint256 _amount);
-    event Unstaked(address indexed user, uint256 _amount, uint256 timestamp);
-    event RewardPaid(address indexed user, uint256 reward);
-    event RewardsDurationUpdated(uint256 newDuration);
-    // event Withdrawn(address indexed user, uint256 _amount);
 }
