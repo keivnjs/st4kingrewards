@@ -111,7 +111,6 @@ contract StakingReward is ReentrancyGuard, Ownable {
 
     function unstake(uint256 _amount)
         public
-        nonReentrant
         updateReward(msg.sender)
     {
         require(_amount > 0, "Amount = 0");
