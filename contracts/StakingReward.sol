@@ -2,10 +2,9 @@
 pragma solidity ^0.8.10;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract StakingReward is ReentrancyGuard, Ownable {
+contract StakingReward is Ownable {
     IERC20 public immutable stakingToken;
     IERC20 public immutable rewardsToken;
 
@@ -87,11 +86,7 @@ contract StakingReward is ReentrancyGuard, Ownable {
 
     /* ========== MUTATIVE FUNCTIONS ========== */
 
-    function stake(uint256 _amount)
-        external
-        nonReentrant
-        updateReward(msg.sender)
-    {
+    function stake(uint256 _amount) external updateReward(msg.sender) {
         require(_amount > 0, "amount = 0");
         lastStake[msg.sender] = block.timestamp;
         balanceOf[msg.sender] += _amount;
@@ -100,7 +95,7 @@ contract StakingReward is ReentrancyGuard, Ownable {
         emit Staked(msg.sender, _amount);
     }
 
-    function getReward() public nonReentrant updateReward(msg.sender) {
+    function getReward() public updateReward(msg.sender) {
         uint256 reward = rewards[msg.sender];
         if (reward > 0) {
             rewards[msg.sender] = 0;
@@ -109,10 +104,7 @@ contract StakingReward is ReentrancyGuard, Ownable {
         }
     }
 
-    function unstake(uint256 _amount)
-        public
-        updateReward(msg.sender)
-    {
+    function unstake(uint256 _amount) public updateReward(msg.sender) {
         require(_amount > 0, "Amount = 0");
         balanceOf[msg.sender] -= _amount;
         totalSupply -= _amount;
