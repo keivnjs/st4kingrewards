@@ -20,8 +20,8 @@ contract StakingReward is ReentrancyGuard, Ownable {
 
     mapping(address => uint256) public lastStake; // timestamp when user stake
     mapping(address => uint256) public userRewardPerTokenPaid; // User address => rewardPerTokenStored
-    mapping(address => uint256) public rewards; // User address => rewards to be claimed
     mapping(address => uint256) public balanceOf; // User address => staked amount
+    mapping(address => uint256) private rewards; // User address => rewards to be claimed
 
     /* ========== EVENTS ========== */
 
