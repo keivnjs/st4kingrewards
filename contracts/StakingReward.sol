@@ -32,8 +32,6 @@ contract StakingReward is ReentrancyGuard, Ownable {
     event RewardPaid(address indexed user, uint256 reward);
     event RewardsDurationUpdated(uint256 newDuration);
 
-    // event emergencyWithdrawn(address indexed user, uint256 _amount);
-
     /* ========== CONSTRUCTOR ========== */
 
     constructor(
@@ -95,13 +93,9 @@ contract StakingReward is ReentrancyGuard, Ownable {
     }
 
     function emergencyWithdrawReward() external onlyOwner {
-        require(IS_EMERGENCY, "Only emergency situation");
+        require(IS_EMERGENCY);
         totalRewards -= totalRewards;
         rewardsToken.transfer(msg.sender, totalRewards);
-    }
-
-    function emergencyToggle(bool _status) external onlyOwner {
-        IS_EMERGENCY = _status;
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -111,7 +105,7 @@ contract StakingReward is ReentrancyGuard, Ownable {
         nonReentrant
         updateReward(msg.sender)
     {
-        require(_amount > 0, "Amount = 0");
+        require(_amount > 0, "amount = 0");
         lastStake[msg.sender] = block.timestamp;
         balanceOf[msg.sender] += _amount;
         totalSupply += _amount;
@@ -150,13 +144,17 @@ contract StakingReward is ReentrancyGuard, Ownable {
         getReward();
     }
 
-    function emergencyWithdraw() external {
+    function emergencyWithdraw() public {
         require(IS_EMERGENCY, "Only emergency situation");
         uint256 balance = balanceOf[msg.sender];
         require(balance > 0, "Balance = 0");
         totalSupply -= balance;
         balanceOf[msg.sender] -= balance;
         stakingToken.transfer(msg.sender, balance);
+    }
+
+    function emergencyToggle(bool _status) external onlyOwner {
+        IS_EMERGENCY = _status;
     }
 
     /* ========== VIEWS ========== */
