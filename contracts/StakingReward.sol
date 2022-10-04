@@ -17,6 +17,8 @@ contract StakingReward is ReentrancyGuard, Ownable {
     uint256 public rewardPerTokenStored; // Sum of (reward rate * duration * 1e18 / total supply)
     uint256 public totalSupply; // Total Staked
     uint256 public lockPeriod;
+    uint256 public totalRewards;
+    bool public IS_EMERGENCY;
 
     mapping(address => uint256) public lastStake; // timestamp when user stake
     mapping(address => uint256) public userRewardPerTokenPaid; // User address => rewardPerTokenStored
@@ -29,6 +31,8 @@ contract StakingReward is ReentrancyGuard, Ownable {
     event Unstaked(address indexed user, uint256 _amount, uint256 timestamp);
     event RewardPaid(address indexed user, uint256 reward);
     event RewardsDurationUpdated(uint256 newDuration);
+
+    // event emergencyWithdrawn(address indexed user, uint256 _amount);
 
     /* ========== CONSTRUCTOR ========== */
 
@@ -77,12 +81,23 @@ contract StakingReward is ReentrancyGuard, Ownable {
 
         require(rewardRate > 0, "reward rate = 0");
         require(
-            rewardRate * duration <= rewardsToken.balanceOf(address(this)),
+            rewardRate * duration <= totalRewards,
             "Provided reward too high"
         );
 
         finishAt = block.timestamp + duration;
         updatedAt = block.timestamp;
+    }
+
+    function initRewards(uint256 _amount) external onlyOwner {
+        rewardsToken.transferFrom(msg.sender, address(this), _amount);
+        totalRewards += _amount;
+    }
+
+    function emergencyWithdrawReward() external onlyOwner {
+        require(IS_EMERGENCY);
+        totalRewards = 0;
+        rewardsToken.transfer(msg.sender, totalRewards);
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -105,6 +120,7 @@ contract StakingReward is ReentrancyGuard, Ownable {
         if (reward > 0) {
             rewards[msg.sender] = 0;
             rewardsToken.transfer(msg.sender, reward);
+            totalRewards -= reward;
             emit RewardPaid(msg.sender, reward);
         }
     }
@@ -128,6 +144,19 @@ contract StakingReward is ReentrancyGuard, Ownable {
     function exit() external {
         unstake(balanceOf[msg.sender]);
         getReward();
+    }
+
+    function emergencyWithdraw() public {
+        require(IS_EMERGENCY, "Only emergency situation");
+        uint256 balance = balanceOf[msg.sender];
+        require(balance > 0, "Balance = 0");
+        totalSupply -= balance;
+        balanceOf[msg.sender] -= balance;
+        stakingToken.transfer(msg.sender, balance);
+    }
+
+    function emergencyToggle(bool _status) external onlyOwner {
+        IS_EMERGENCY = _status;
     }
 
     /* ========== VIEWS ========== */
