@@ -96,7 +96,7 @@ contract StakingReward is ReentrancyGuard, Ownable {
     }
 
     function emergencyWithdrawReward() external onlyOwner {
-        require(IS_EMERGENCY);
+        require(IS_EMERGENCY, "Only emergency situation");
         rewardsToken.transfer(msg.sender, totalRewards);
         totalRewards -= totalRewards;
     }
