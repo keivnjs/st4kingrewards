@@ -5,6 +5,12 @@ require('dotenv').config();
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: '0.8.17',
+  settings: {
+    optimizer: {
+      enabled: true,
+      runs: 200,
+    },
+  },
   networks: {
     rinkeby: {
       url: 'https://rinkeby.infura.io/v3/bdbe66fbcc554f12b7a2fd9cdfec6598',
@@ -18,6 +24,7 @@ module.exports = {
       url: 'https://bsc-dataseed.binance.org/',
       accounts: [process.env.PRIVATE_KEY],
     },
+
   },
   etherscan: {
     apiKey: process.env.ETHERSCAN_API_KEY,
